@@ -1,0 +1,429 @@
+<script type="text/javascript">
+        var gk_isXlsx = false;
+        var gk_xlsxFileLookup = {};
+        var gk_fileData = {};
+        function filledCell(cell) {
+          return cell !== '' && cell != null;
+        }
+        function loadFileData(filename) {
+        if (gk_isXlsx && gk_xlsxFileLookup[filename]) {
+            try {
+                var workbook = XLSX.read(gk_fileData[filename], { type: 'base64' });
+                var firstSheetName = workbook.SheetNames[0];
+                var worksheet = workbook.Sheets[firstSheetName];
+
+                // Convert sheet to JSON to filter blank rows
+                var jsonData = XLSX.utils.sheet_to_json(worksheet, { header: 1, blankrows: false, defval: '' });
+                // Filter out blank rows (rows where all cells are empty, null, or undefined)
+                var filteredData = jsonData.filter(row => row.some(filledCell));
+
+                // Heuristic to find the header row by ignoring rows with fewer filled cells than the next row
+                var headerRowIndex = filteredData.findIndex((row, index) =>
+                  row.filter(filledCell).length >= filteredData[index + 1]?.filter(filledCell).length
+                );
+                // Fallback
+                if (headerRowIndex === -1 || headerRowIndex > 25) {
+                  headerRowIndex = 0;
+                }
+
+                // Convert filtered JSON back to CSV
+                var csv = XLSX.utils.aoa_to_sheet(filteredData.slice(headerRowIndex)); // Create a new sheet from filtered array of arrays
+                csv = XLSX.utils.sheet_to_csv(csv, { header: 1 });
+                return csv;
+            } catch (e) {
+                console.error(e);
+                return "";
+            }
+        }
+        return gk_fileData[filename] || "";
+        }
+        </script><!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="description" content="SHILPI ARCHITECTS & PARTNERS - Sustainable, human-centered architectural design.">
+  <meta name="keywords" content="architecture, sustainable design, human-centered design, SHILPI ARCHITECTS & PARTNERS">
+  <title>SHILPI ARCHITECTS & PARTNERS</title>
+  <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="https://unpkg.com/swiper/swiper-bundle.min.css" />
+  <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+  <script src="https://unpkg.com/swiper/swiper-bundle.min.js"></script>
+  <style>
+    body { font-family: 'Inter', sans-serif; scroll-behavior: smooth; margin: 0; color: #000000; }
+    .hero { height: 100vh; position: relative; overflow: hidden; }
+    .swiper-slide { position: relative; }
+    .swiper-slide img { width: 100%; height: 100vh; object-fit: cover; display: block; }
+    .hero-overlay { position: absolute; bottom: 4rem; left: 4rem; color: #FFFFFF; max-width: 600px; z-index: 2; }
+    .hero-overlay h1 { font-size: 3rem; font-weight: 700; margin: 0 0 0.5rem; line-height: 1.2; }
+    .hero-overlay p { font-size: 1.25rem; font-weight: 300; margin: 0; line-height: 1.6; }
+    .swiper-pagination-bullet { background: #FFFFFF; opacity: 0.5; }
+    .swiper-pagination-bullet-active { opacity: 1; }
+    .nav-transparent { background: rgba(0, 0, 0, 0.3); transition: background 0.3s ease, box-shadow 0.3s ease; }
+    .nav-scrolled { background: #FFFFFF; box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1); }
+    .nav-links { display: flex; align-items: center; }
+    .nav-links a { font-size: 1rem; font-weight: 400; transition: color 0.3s ease; text-decoration: none; }
+    .nav-transparent .nav-links a { color: #FFFFFF; }
+    .nav-scrolled .nav-links a { color: #000000; }
+    .nav-links a:hover { color: #4A5A4A; }
+    .has-dropdown { position: relative; }
+    .dropdown { display: none; position: absolute; top: 100%; left: 0; background: #FFFFFF; box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1); min-width: 200px; z-index: 20; }
+    .dropdown a { color: #000000; padding: 0.75rem 1.5rem; display: block; font-size: 0.9rem; }
+    .dropdown a:hover { background: #F5F5F5; color: #4A5A4A; }
+    .has-dropdown:hover .dropdown { display: block; }
+    .portfolio-item { position: relative; overflow: hidden; }
+    .portfolio-item img { width: 100%; height: auto; display: block; transition: transform 0.5s ease; }
+    .portfolio-item:hover img { transform: scale(1.1); }
+    .portfolio-overlay { position: absolute; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0, 0, 0, 0.7); opacity: 0; transition: opacity 0.3s ease; display: flex; align-items: center; justify-content: center; }
+    .portfolio-item:hover .portfolio-overlay { opacity: 1; }
+    .portfolio-overlay h3 { color: #FFFFFF; font-size: 1.5rem; font-weight: 700; text-align: center; margin: 0; }
+    .fade-in { opacity: 0; transform: translateY(20px); transition: opacity 0.8s ease, transform 0.8s ease; }
+    .fade-in.visible { opacity: 1; transform: translateY(0); }
+    .section { padding: 4rem 0; }
+    .container { max-width: 1280px; margin: 0 auto; padding: 0 1rem; }
+    h2 { font-size: 4rem; font-weight: 700; color: #000000; text-align: center; margin: 0 0 3rem; line-height: 1.2; }
+    .filter-btn { font-size: 0.9rem; font-weight: 400; background: #F5F5F5; color: #000000; padding: 0.5rem 1rem; border: none; cursor: pointer; transition: background 0.3s ease, color 0.3s ease; }
+    .filter-btn:hover, .filter-btn.active { background: #000000; color: #FFFFFF; }
+    footer a { color: #FFFFFF; font-size: 0.9rem; font-weight: 300; transition: color 0.3s ease; }
+    footer a:hover { color: #CCCCCC; }
+    .hamburger { display: none; }
+    @media (max-width: 768px) {
+      .hero { height: 70vh; }
+      .swiper-slide img { height: 70vh; }
+      .hero-overlay { bottom: 2rem; left: 2rem; max-width: 80%; }
+      .hero-overlay h1 { font-size: 2rem; }
+      .hero-overlay p { font-size: 1rem; }
+      .nav-links { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100vh; background: #FFFFFF; flex-direction: column; align-items: center; justify-content: center; z-index: 10; }
+      .nav-links.active { display: flex; }
+      .nav-links a { color: #000000; font-size: 1.5rem; margin: 1rem 0; }
+      .has-dropdown { position: static; }
+      .dropdown { position: static; box-shadow: none; background: transparent; min-width: 100%; display: none; }
+      .dropdown.active { display: block; }
+      .dropdown a { color: #000000; padding: 0.5rem 0; font-size: 1.25rem; }
+      .hamburger { display: block; cursor: pointer; }
+      .hamburger div { width: 25px; height: 3px; background: #FFFFFF; margin: 5px 0; transition: all 0.3s ease; }
+      .nav-scrolled .hamburger div { background: #000000; }
+      .hamburger.active div:nth-child(1) { transform: rotate(45deg) translate(5px, 5px); }
+      .hamburger.active div:nth-child(2) { opacity: 0; }
+      .hamburger.active div:nth-child(3) { transform: rotate(-45deg) translate(7px, -7px); }
+      .section { padding: 2rem 0; }
+      .portfolio-grid { grid-template-columns: 1fr; }
+      footer .grid { grid-template-columns: 1fr; }
+      h2 { font-size: 2.5rem; margin-bottom: 2rem; }
+    }
+  </style>
+</head>
+<body>
+  <!-- Navigation -->
+  <header>
+    <nav class="fixed top-0 w-full z-20 nav-transparent" aria-label="Main navigation">
+      <div class="container flex justify-between items-center py-4">
+        <a href="#" class="flex items-center" aria-label="YourFirm Architects Home">
+  <img src="images/logo.png" alt="SHILPI ARCHITECTS" class="h-20 w-auto">
+</a>
+        <div class="hamburger" aria-label="Toggle menu">
+          <div></div>
+          <div></div>
+          <div></div>
+        </div>
+        <ul class="nav-links flex space-x-6">
+          <li><a href="#home" class="hover:text-gray-300">Home</a></li>
+          <li class="has-dropdown">
+            <a href="#work" class="hover:text-gray-300" aria-haspopup="true" aria-expanded="false">Work</a>
+            <ul class="dropdown">
+              <li><a href="#">Education</a></li>
+              <li><a href="#">Civic</a></li>
+              <li><a href="#">Commercial</a></li>
+            </ul>
+          </li>
+          <li class="has-dropdown">
+            <a href="#about" class="hover:text-gray-300" aria-haspopup="true" aria-expanded="false">About</a>
+            <ul class="dropdown">
+              <li><a href="#">Our Story</a></li>
+              <li><a href="#">Team</a></li>
+              <li><a href="#">Values</a></li>
+            </ul>
+          </li>
+          <li><a href="#contact" class="hover:text-gray-300">Contact</a></li>
+        </ul>
+      </div>
+    </nav>
+  </header>
+
+  <!-- Hero Section -->
+  <main>
+    <section id="home" class="hero">
+      <div class="swiper-container">
+        <div class="swiper-wrapper">
+  <div class="swiper-slide">
+    <img src="images/downtown-library.webp" alt="KAVERI UNIVERSITY, a sustainable Learning space" loading="lazy">
+    <div class="hero-overlay fade-in">
+      <h1>KAVERI UNIVERSITY</h1>
+      <p>A sustainable Educational space for learning and community engagement.</p>
+    </div>
+  </div>
+  <div class="swiper-slide">
+    <img src="images/green-office.webp" alt="SIGNOVA Micronutrients Factory" loading="lazy">
+    <div class="hero-overlay fade-in">
+      <h1>SIGNOVA Micronutrients Factory</h1>
+      <p>Micronutrients Factory building designed for innovation.</p>
+    </div>
+  </div>
+  <div class="swiper-slide">
+    <img src="images/civic-plaza.webp" alt="BLOW-UPS INTERNATIONAL PRIVATE LIMITED
+, a vibrant public space" loading="lazy">
+    <div class="hero-overlay fade-in">
+      <h1>BLOW-UPS INTERNATIONAL PRIVATE LIMITED</h1>
+      <p>A Plastic manufacturing Factory.</p>
+    </div>
+  </div>
+<div class="swiper-slide">
+    <img src="images/civic1-plaza.webp" alt="BLOW-UPS INTERNATIONAL PRIVATE LIMITED
+, a vibrant public space" loading="lazy">
+    <div class="hero-overlay fade-in">
+      <h1>CONVENTION CENTER</h1>
+      <p>A Celebration Of Happiness.</p>
+    </div>
+  </div>
+</div>
+        </div>
+        <div class="swiper-pagination"></div>
+      </div>
+    </section>
+
+    <!-- Portfolio Section -->
+    <section id="work" class="section bg-white">
+      <div class="container">
+        <h2 class="fade-in">Selected Work</h2>
+        <div class="flex justify-center mb-8 space-x-2">
+          <button class="filter-btn active" data-filter="all">All</button>
+          <button class="filter-btn" data-filter="education">Education</button>
+          <button class="filter-btn" data-filter="civic">Civic</button>
+          <button class="filter-btn" data-filter="commercial">Commercial</button>
+        </div>
+        <div class="portfolio-grid grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+          <article class="portfolio-item fade-in" data-category="Education">
+  <img src="images/downtown-library-thumb.webp" alt="Kaveri University, a sustainable civic space" loading="lazy">
+  <div class="portfolio-overlay">
+    <h3>Kaveri University</h3>
+  </div>
+</article>
+          <article class="portfolio-item fade-in" data-category="Education">
+  <img src="images/downtown1-library-thumb.webp" alt="Kaveri University, a sustainable civic space" loading="lazy">
+  <div class="portfolio-overlay">
+    <h3>Kaveri University</h3>
+  </div>
+</article>
+<article class="portfolio-item fade-in" data-category="Education">
+  <img src="images/downtown2-library-thumb.webp" alt="Kaveri University, a sustainable civic space" loading="lazy">
+  <div class="portfolio-overlay">
+    <h3>Kaveri University</h3>
+  </div>
+</article>
+<article class="portfolio-item fade-in" data-category="Education">
+  <img src="images/downtown3-library-thumb.webp" alt="BLOW-UPS INTERNATIONAL PRIVATE LIMITED, a sustainable civic space" loading="lazy">
+  <div class="portfolio-overlay">
+    <h3>BLOW-UPS INTERNATIONAL PRIVATE LIMITED</h3>
+  </div>
+</article>
+<article class="portfolio-item fade-in" data-category="Education">
+  <img src="images/downtown4-library-thumb.webp" alt="SIGNOVA Micronutrients Factory, a sustainable civic space" loading="lazy">
+  <div class="portfolio-overlay">
+    <h3>SIGNOVA Micronutrients Factory</h3>
+  </div>
+</article>
+<article class="portfolio-item fade-in" data-category="Education">
+  <img src="images/downtown5-library-thumb.webp" alt="BLOW-UPS INTERNATIONAL PRIVATE LIMITED, a sustainable civic space" loading="lazy">
+  <div class="portfolio-overlay">
+    <h3>BLOW-UPS INTERNATIONAL PRIVATE LIMITED</h3>
+  </div>
+</article>
+<article class="portfolio-item fade-in" data-category="Education">
+  <img src="images/downtown6-library-thumb.webp" alt="BLOW-UPS INTERNATIONAL PRIVATE LIMITED, a sustainable civic space" loading="lazy">
+  <div class="portfolio-overlay">
+    <h3>HOSPITAL INTERIORS</h3>
+  </div>
+</article>
+<article class="portfolio-item fade-in" data-category="Education">
+  <img src="images/downtown7-library-thumb.webp" alt="BLOW-UPS INTERNATIONAL PRIVATE LIMITED, a sustainable civic space" loading="lazy">
+  <div class="portfolio-overlay">
+    <h3>HOSPITAL ARCHITECTURE</h3>
+  </div>
+</article>
+<article class="portfolio-item fade-in" data-category="Education">
+  <img src="images/downtown8-library-thumb.webp" alt="BLOW-UPS INTERNATIONAL PRIVATE LIMITED, a sustainable civic space" loading="lazy">
+  <div class="portfolio-overlay">
+    <h3>HOSPITAL INTERIORS</h3>
+  </div>
+</article>
+<article class="portfolio-item fade-in" data-category="Education">
+  <img src="images/downtown9-library-thumb.webp" alt="BLOW-UPS INTERNATIONAL PRIVATE LIMITED, a sustainable civic space" loading="lazy">
+  <div class="portfolio-overlay">
+    <h3>CONVENTION CENTER</h3>
+  </div>
+</article>
+<article class="portfolio-item fade-in" data-category="Education">
+  <img src="images/downtown10-library-thumb.webp" alt="BLOW-UPS INTERNATIONAL PRIVATE LIMITED, a sustainable civic space" loading="lazy">
+  <div class="portfolio-overlay">
+    <h3>School</h3>
+  </div>
+</article>
+<article class="portfolio-item fade-in" data-category="Education">
+  <img src="images/downtown11-library-thumb.webp" alt="BLOW-UPS INTERNATIONAL PRIVATE LIMITED, a sustainable civic space" loading="lazy">
+  <div class="portfolio-overlay">
+    <h3>Villa</h3>
+  </div>
+</article>
+<article class="portfolio-item fade-in" data-category="Education">
+  <img src="images/downtown12-library-thumb.webp" alt="BLOW-UPS INTERNATIONAL PRIVATE LIMITED, a sustainable civic space" loading="lazy">
+  <div class="portfolio-overlay">
+    <h3>Villa</h3>
+  </div>
+</article>
+<article class="portfolio-item fade-in" data-category="Education">
+  <img src="images/downtown13-library-thumb.webp" alt="BLOW-UPS INTERNATIONAL PRIVATE LIMITED, a sustainable civic space" loading="lazy">
+  <div class="portfolio-overlay">
+    <h3>FARM HOUSE</h3>
+  </div>
+</article>
+<article class="portfolio-item fade-in" data-category="Education">
+  <img src="images/downtown14-library-thumb.webp" alt="BLOW-UPS INTERNATIONAL PRIVATE LIMITED, a sustainable civic space" loading="lazy">
+  <div class="portfolio-overlay">
+    <h3>FARM HOUSE</h3>
+  </div>
+</article>
+         
+        </div>
+      </div>
+    </section>
+
+    <!-- About Section -->
+    <section id="about" class="section bg-gray-100">
+      <div class="container">
+        <h2 class="fade-in">Our Practice</h2>
+        <p class="text-lg text-center max-w-3xl mx-auto fade-in">
+          Shilpi Architects & Partners is committed to sustainable, human-centered design that inspires communities and respects the environment. Our integrated approach delivers innovative solutions for a better future.
+        </p>
+        <div class="text-center mt-8">
+          <a href="#" class="bg-black text-white px-6 py-3 rounded hover:bg-gray-800 fade-in">Learn More</a>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <!-- Footer -->
+  <footer class="bg-black text-white py-12">
+    <div class="container grid grid-cols-1 md:grid-cols-4 gap-8">
+      <div>
+        <h3 class="text-xl font-semibold mb-4">Shilpi Architects & Partners</h3>
+        <p class="text-sm">Sustainable design since 2020.</p>
+      </div>
+      <div>
+        <h3 class="text-xl font-semibold mb-4">Work</h3>
+        <a href="#" class="block mb-2">Education</a>
+        <a href="#" class="block mb-2">Civic</a>
+        <a href="#" class="block mb-2">Commercial</a>
+      </div>
+      <div>
+        <h3 class="text-xl font-semibold mb-4">About</h3>
+        <a href="#" class="block mb-2">Our Story</a>
+        <a href="#" class="block mb-2">Team</a>
+        <a href="#" class="block mb-2">Values</a>
+      </div>
+      <div>
+        <h3 class="text-xl font-semibold mb-4">Connect</h3>
+        <a href="#" class="block mb-2">LinkedIn</a>
+        <a href="https://www.instagram.com/shilpi_architects/" class="flex items-center mb-2 hover:text-gray-300" target="_blank" rel="noopener noreferrer">
+  <img src="images/instagram-icon.png" alt="Instagram Icon" class="w-5 h-5 mr-2">
+  Instagram
+</a>
+   <a href="https://www.instagram.com/shilpi_architects/" class="flex items-center mb-2 hover:text-gray-300" target="_blank" rel="noopener noreferrer">
+  <img src="images/phone-icon.png" alt="Instagram Icon" class="w-5 h-5 mr-2">
+  +91 9928985315
+</a>
+        <a href="#" class="block mb-2">Twitter</a>
+      </div>
+    </div>
+    <div class="text-center mt-8 text-sm">
+      <p>© 2025 Shilpi Architects & Partners. All rights reserved.</p>
+    </div>
+  </footer>
+
+  <script>
+    // Initialize Swiper
+    const swiper = new Swiper('.swiper-container', {
+      loop: true,
+      autoplay: { delay: 6000, disableOnInteraction: false },
+      pagination: { el: '.swiper-pagination', clickable: true },
+      effect: 'fade',
+      fadeEffect: { crossFade: true }
+    });
+
+    // Navbar scroll effect
+    $(window).scroll(function() {
+      if ($(this).scrollTop() > 50) {
+        $('nav').removeClass('nav-transparent').addClass('nav-scrolled');
+        $('.hamburger div').css('background', '#000000');
+      } else {
+        $('nav').removeClass('nav-scrolled').addClass('nav-transparent');
+        $('.hamburger div').css('background', '#FFFFFF');
+      }
+    });
+
+    // Hamburger menu
+    $('.hamburger').click(function() {
+      $(this).toggleClass('active');
+      $('.nav-links').toggleClass('active');
+      const isActive = $(this).hasClass('active');
+      $('.has-dropdown > a').attr('aria-expanded', isActive);
+    });
+
+    // Mobile dropdown toggle
+    $('.has-dropdown > a').click(function(e) {
+      if ($(window).width() <= 768) {
+        e.preventDefault();
+        $(this).siblings('.dropdown').toggleClass('active');
+      }
+    });
+
+    // Fade-in animations
+    const observer = new IntersectionObserver((entries) => {
+      entries.forEach(entry => {
+        if (entry.isIntersecting) {
+          entry.target.classList.add('visible');
+          observer.unobserve(entry.target);
+        }
+      });
+    }, { threshold: 0.1 });
+    $('.fade-in').each(function() { observer.observe(this); });
+
+    // Portfolio filter
+    $('.filter-btn').click(function() {
+      $('.filter-btn').removeClass('active');
+      $(this).addClass('active');
+      const filter = $(this).data('filter');
+      $('.portfolio-item').each(function() {
+        if (filter === 'all' || $(this).data('category') === filter) {
+          $(this).show();
+        } else {
+          $(this).hide();
+        }
+      });
+    });
+
+    // Smooth scrolling
+    $('a[href*="#"]').click(function(e) {
+      if ($(this).attr('href').startsWith('#')) {
+        e.preventDefault();
+        $('html, body').animate({
+          scrollTop: $($(this).attr('href')).offset().top
+        }, 500);
+        $('.hamburger').removeClass('active');
+        $('.nav-links').removeClass('active');
+        $('.dropdown').removeClass('active');
+      }
+    });
+  </script>
+</body>
+</html>
